@@ -1,0 +1,184 @@
+.cw-github-issues-modal {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(1180px, calc(100vw - 32px));
+}
+
+.cw-github-issues-modal .modal-header,
+.cw-github-issues-modal .github-issues-modal-footer {
+  padding-inline: 24px;
+}
+
+.cw-github-issues-modal .github-issues-modal-body {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  min-height: min(76vh, 760px);
+  overflow: hidden;
+  background: #f7f9fd;
+}
+
+.cw-github-issues-modal .github-issues-modal-tablist {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px 14px;
+  border-right: 1px solid var(--line);
+  background: #ffffff;
+}
+
+.cw-github-issues-modal .github-issues-modal-tab {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  min-height: 58px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cw-github-issues-modal .github-issues-modal-tab span,
+.cw-github-issues-modal .github-issues-modal-tab small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cw-github-issues-modal .github-issues-modal-tab span {
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.cw-github-issues-modal .github-issues-modal-tab small {
+  font-size: 0.76rem;
+}
+
+.cw-github-issues-modal .github-issues-modal-tab[aria-selected="true"] {
+  border-color: rgba(106, 90, 249, 0.5);
+  background: #f5f3ff;
+  color: var(--accent-strong);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.cw-github-issues-modal .github-issues-modal-tab:focus-visible {
+  outline: none;
+  border-color: rgba(106, 90, 249, 0.75);
+  box-shadow: 0 0 0 4px rgba(106, 90, 249, 0.12);
+}
+
+.cw-github-issues-modal .github-issues-modal-panels,
+.cw-github-issues-modal .github-issues-modal-panel {
+  min-width: 0;
+  min-height: 0;
+}
+
+.cw-github-issues-modal .github-issues-modal-panels {
+  overflow: hidden;
+}
+
+.cw-github-issues-modal .github-issues-modal-panel {
+  height: 100%;
+  overflow: auto;
+  padding: 22px 24px;
+}
+
+.cw-github-issues-modal .github-issues-modal-panel[hidden] {
+  display: none;
+}
+
+.cw-github-issues-modal .github-issues-modal-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  gap: 18px;
+  align-items: start;
+}
+
+.cw-github-issues-modal .github-issues-modal-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.cw-github-issues-modal .github-issues-modal-section {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.cw-github-issues-modal .github-issues-config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cw-github-issues-modal .github-issues-config-grid .field-group,
+.cw-github-issues-modal .github-issues-modal-section .field-group {
+  min-width: 0;
+}
+
+.cw-github-issues-modal .github-issues-span-2 {
+  grid-column: 1 / -1;
+}
+
+.cw-github-issues-modal .github-issues-modal-section textarea {
+  min-height: 160px;
+  resize: vertical;
+}
+
+.cw-github-issues-modal .github-issues-modal-help {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.cw-github-issues-modal .github-issues-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 14px;
+  border-top: 1px solid var(--line);
+  background: #ffffff;
+}
+
+@media (max-width: 900px) {
+  .cw-github-issues-modal {
+    width: min(100%, calc(100vw - 24px));
+  }
+
+  .cw-github-issues-modal .github-issues-modal-body {
+    grid-template-columns: 1fr;
+  }
+
+  .cw-github-issues-modal .github-issues-modal-tablist {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(160px, 1fr);
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .cw-github-issues-modal .github-issues-modal-layout,
+  .cw-github-issues-modal .github-issues-config-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cw-github-issues-modal .github-issues-modal-panel {
+    padding: 16px;
+  }
+
+  .cw-github-issues-modal .github-issues-modal-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

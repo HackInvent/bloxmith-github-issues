@@ -1,0 +1,122 @@
+<div class="cw-block-inspector cw-github-issues-inspector" data-block-inspector-root data-node-id="{{ node_id }}" data-node-type="{{ node_type }}">
+  <div class="inspector-selection {{ summary_hidden }}" data-node-type="{{ node_type }}">
+    <div class="inspector-node-card">
+      <div class="inspector-node-icon">{{ node_icon }}</div>
+      <div class="inspector-node-copy">
+        <strong>{{ node_title }}</strong>
+        <span>{{ node_kind }}</span>
+      </div>
+      <span class="inspector-node-tag">{{ node_tag }}</span>
+    </div>
+    <div class="inspector-tabs">
+      <button class="inspector-tab {{ general_active }}" data-inspector-tab="general" type="button">General</button>
+      <button class="inspector-tab {{ ports_active }} {{ ports_tab_hidden }}" data-inspector-tab="ports" type="button" {{ ports_tab_disabled }}>Ports</button>
+    </div>
+  </div>
+
+  <div class="inspector-view {{ general_hidden }}" data-inspector-panel-tab="general">
+    <div class="field-group {{ title_hidden }}">
+      <label>Nom du node</label>
+      <input data-node-title-input type="text" placeholder="{{ node_title_placeholder }}" value="{{ node_title }}" />
+    </div>
+
+    <div class="field-group">
+      <label>Repository</label>
+      <input data-block-config-field="repo" type="text" autocomplete="off" spellcheck="false" placeholder="owner/repo" value="{{ repo }}" />
+    </div>
+
+    <div class="field-group">
+      <label>Action</label>
+      <select data-block-config-field="action">{{ action_options }}</select>
+    </div>
+    <div class="field-group">
+      <label>Issue number</label>
+      <input data-block-config-field="issue_number" data-block-value-type="integer" type="number" min="0" step="1" value="{{ issue_number }}" />
+    </div>
+    <div class="field-group">
+      <label>State</label>
+      <select data-block-config-field="state">{{ state_options }}</select>
+    </div>
+    <div class="field-group">
+      <label>Per page</label>
+      <input data-block-config-field="per_page" data-block-value-type="integer" type="number" min="1" max="100" step="1" value="{{ per_page }}" />
+    </div>
+    <div class="field-group">
+      <label>API base URL</label>
+      <input data-block-config-field="api_base_url" type="text" autocomplete="off" spellcheck="false" value="{{ api_base_url }}" />
+    </div>
+    <div class="field-group">
+      <label>Timeout secondes</label>
+      <input data-block-config-field="timeout_sec" data-block-value-type="integer" type="number" min="1" step="1" value="{{ timeout_sec }}" />
+    </div>
+    <div class="field-group">
+      <label>Token GitHub</label>
+      <input data-block-config-field="token" data-block-skip-empty="true" type="password" autocomplete="off" spellcheck="false" placeholder="{{ token_placeholder }}" />
+    </div>
+    <label class="checkbox-line">
+      <input data-block-config-field="dry_run" data-block-value-type="boolean" type="checkbox" {{ dry_run_checked }} />
+      <span>Dry run pour les actions d'ecriture</span>
+    </label>
+    <label class="checkbox-line">
+      <input data-block-config-field="include_pull_requests" data-block-value-type="boolean" type="checkbox" {{ include_pull_requests_checked }} />
+      <span>Inclure les pull requests dans list_issues</span>
+    </label>
+    <label class="checkbox-line">
+      <input data-block-config-field="include_comments" data-block-value-type="boolean" type="checkbox" {{ include_comments_checked }} />
+      <span>Recuperer le contenu des commentaires</span>
+    </label>
+
+    <div class="field-group">
+      <label>Titre</label>
+      <input data-block-config-field="title" type="text" autocomplete="off" spellcheck="false" placeholder="Titre pour create_issue" value="{{ title }}" />
+    </div>
+    <div class="field-group">
+      <label>Body / commentaire</label>
+      <textarea data-block-config-field="body" rows="7" spellcheck="false" placeholder="Corps issue ou commentaire. Peut aussi venir de l'input actions.">{{ body }}</textarea>
+    </div>
+    <div class="field-group">
+      <label>Labels</label>
+      <input data-block-config-field="labels" type="text" autocomplete="off" spellcheck="false" placeholder="bug,triage" value="{{ labels }}" />
+    </div>
+    <div class="field-group">
+      <label>Assignees</label>
+      <input data-block-config-field="assignees" type="text" autocomplete="off" spellcheck="false" placeholder="octocat,maintainer" value="{{ assignees }}" />
+    </div>
+    <div class="field-group">
+      <label>State reason</label>
+      <select data-block-config-field="state_reason">{{ state_reason_options }}</select>
+    </div>
+
+    <p class="inspector-copy">
+      Input <code>actions</code>: JSON action unique ou format multi-actions standard avec <code>issue_number</code> racine et <code>actions[]</code>.
+      Actions ecriture: <code>create_issue</code>, <code>comment_issue</code>, <code>add_labels</code>,
+      <code>remove_label</code>, <code>assign_issue</code>, <code>close_issue</code>, <code>reopen_issue</code>.
+      Avec <code>dry_run</code>, aucune ecriture GitHub n'est envoyee.
+    </p>
+    <div class="inspector-actions {{ actions_hidden }}">
+      <button class="solid-btn" data-block-apply type="button" disabled>Appliquer</button>
+      <button class="ghost-btn {{ duplicate_hidden }}" data-block-action="duplicate" type="button">Dupliquer</button>
+      <button class="danger-btn {{ delete_hidden }}" data-block-action="delete" type="button">Supprimer le bloc</button>
+    </div>
+  </div>
+
+  <div class="inspector-view {{ ports_hidden }}" data-inspector-panel-tab="ports">
+    <div class="ports-editor-section">
+      <div class="ports-editor-header">
+        <span class="group-label">Entrees</span>
+        <span class="ports-editor-actions">
+          <button class="ghost-btn add-port-btn {{ add_input_hidden }}" data-add-input-port type="button" {{ add_input_disabled }}>+ Ajouter une entree</button>
+        </span>
+      </div>
+      <div class="ports-editor-list">{{ inputs_html }}</div>
+    </div>
+    <div class="ports-editor-section">
+      <div class="ports-editor-header">
+        <span class="group-label">Sorties</span>
+        <button class="ghost-btn add-port-btn {{ add_output_hidden }}" data-add-output-port type="button" {{ add_output_disabled }}>+ Ajouter une sortie</button>
+      </div>
+      <div class="ports-editor-list">{{ outputs_html }}</div>
+    </div>
+  </div>
+</div>
+

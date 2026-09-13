@@ -1,0 +1,68 @@
+{
+  "kind": "github_issues",
+  "title": "GitHub Issues",
+  "ports": {
+    "inputs": [
+      {
+        "id": 1,
+        "name": "actions",
+        "title": "Actions",
+        "accepts": [
+          "application/json",
+          "text/plain",
+          "message/*"
+        ],
+        "multiplicity": "many",
+        "required": false,
+        "execution_requirement": "required_for_execution"
+      }
+    ],
+    "outputs": [
+      {
+        "id": 1,
+        "name": "result",
+        "title": "Result",
+        "emits": [
+          "application/json",
+          "message/*"
+        ],
+        "multiplicity": "many"
+      },
+      {
+        "id": 2,
+        "name": "summary",
+        "title": "Summary",
+        "emits": [
+          "text/plain",
+          "message/*"
+        ],
+        "multiplicity": "many"
+      }
+    ]
+  },
+  "config": {
+    "api_base_url": "https://api.github.com",
+    "token": "",
+    "repo": "",
+    "action": "list_issues",
+    "issue_number": 0,
+    "state": "open",
+    "title": "",
+    "body": "",
+    "labels": "",
+    "assignees": "",
+    "state_reason": "completed",
+    "include_pull_requests": false,
+    "include_comments": false,
+    "dry_run": true,
+    "per_page": 30,
+    "timeout_sec": 30
+  },
+  "runtime": {
+    "initial_state": "waiting",
+    "runtime_executable": true,
+    "active_worker": true,
+    "centralized_executor": "generic",
+    "centralized_dependency_mode": "all_inputs"
+  }
+}
