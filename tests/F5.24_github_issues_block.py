@@ -50,6 +50,8 @@ from ui_smoke_common import (
     text_node,
     wait_for_run_terminal,
 )
+from urllib.parse import quote
+from block_test_packages import install_test_package, release_key, surface_payload
 
 
 SECRET = "ghp_test_github_issues_secret"
@@ -282,6 +284,11 @@ def run_github_issues_case(runtime_mode: str, fake_server: FakeGitHubIssuesHttpS
     """Run the block through the public run API in one runtime mode."""
 
     with isolated_server() as server:
+        # Les surfaces sont des assets de release : le bundled kind n'en sert aucun.
+        model = install_test_package(server, "github_issues")
+        key = quote(release_key(model), safe="")
+        served = lambda payload, suffix: next(
+            asset["path"] for asset in payload["assets"] if asset["path"].endswith(suffix))
         created = create_run_api(server, runtime_graph(fake_server.base_url), runtime_mode=runtime_mode)
         run = wait_for_run_terminal(server, str(created.get("run_id") or ""), timeout_sec=20)
 
@@ -590,10 +597,8 @@ def test_github_issues_ui_contract(fake_server: FakeGitHubIssuesHttpServer) -> N
     expect('data-block-config-field="dry_run"' in html, "Le dry-run doit etre editable dans le modal.")
     expect('data-block-config-field="include_comments"' in html, "include_comments doit etre editable dans le modal.")
     expect(SECRET not in html, "Le token ne doit pas etre rendu en clair dans le modal.")
-    expect({"kind": "css", "path": "assets/css/block_modal.css"} in assets, "Le CSS modal GitHub Issues doit etre declare.")
-    expect({"kind": "js", "path": "assets/js/block_modal.js"} in assets, "Le JS modal GitHub Issues doit etre declare.")
     expect("width: min(1180px" in css, "Le CSS doit agrandir le modal GitHub Issues.")
-    expect("registry.github_issues" in js, "Le JS doit monter le modal GitHub Issues via le registre block UI.")
+    expect("export function mount" in js, "Le JS doit monter le modal GitHub Issues via le registre block UI.")
 
     inspector = render_block_inspector_panel("github_issues", {"node": node})
     inspector_html = str(inspector.get("html") or "")
