@@ -134,8 +134,8 @@ class GitHubIssuesBlock(BlockDefinition):
         node_dom_id = self._modal_dom_id(node)
         tabs = [
             self._render_modal_tab(node_dom_id=node_dom_id, tab_id="action", label="Action", summary="Repo, token, endpoint", selected=True),
-            self._render_modal_tab(node_dom_id=node_dom_id, tab_id="payload", label="Actions input", summary="Titre, body, labels", selected=False),
-            self._render_modal_tab(node_dom_id=node_dom_id, tab_id="status", label="Ports & etat", summary="Runtime et sorties", selected=False),
+            self._render_modal_tab(node_dom_id=node_dom_id, tab_id="payload", label="Actions input", summary="Title, body, labels", selected=False),
+            self._render_modal_tab(node_dom_id=node_dom_id, tab_id="status", label="Ports and state", summary="Runtime and outputs", selected=False),
         ]
         panels = [
             self._render_action_panel(node_dom_id=node_dom_id, title=title, config=config, selected=True),
@@ -179,11 +179,11 @@ class GitHubIssuesBlock(BlockDefinition):
             '<div class="github-issues-modal-layout">'
             '<div class="github-issues-modal-stack">'
             '<section class="github-issues-modal-section">'
-            '<div class="ports-editor-header"><span class="group-label">Identite</span></div>'
+            '<div class="ports-editor-header"><span class="group-label">Identity</span></div>'
             f'{self._render_title_field(title)}'
             '</section>'
             '<section class="github-issues-modal-section">'
-            '<div class="ports-editor-header"><span class="group-label">Connexion GitHub</span></div>'
+            '<div class="ports-editor-header"><span class="group-label">GitHub connection</span></div>'
             '<div class="github-issues-config-grid">'
             '<div class="field-group github-issues-span-2">'
             '<label>Repository</label>'
@@ -195,10 +195,10 @@ class GitHubIssuesBlock(BlockDefinition):
             '</div>'
             '<div class="field-group github-issues-span-2">'
             '<label>Token GitHub</label>'
-            f'<input data-block-config-field="token" data-block-skip-empty="true" type="password" autocomplete="off" spellcheck="false" placeholder="{escape("Token configure" if config["token"] else "github_pat_...", quote=True)}" />'
+            f'<input data-block-config-field="token" data-block-skip-empty="true" type="password" autocomplete="off" spellcheck="false" placeholder="{escape("Token configured" if config["token"] else "github_pat_...", quote=True)}" />'
             '</div>'
             '</div>'
-            '<p class="github-issues-modal-help">Le token peut rester vide si <code>GITHUB_TOKEN</code> est defini cote serveur. Repo, token, dry-run, API base URL et timeout restent dans la configuration du bloc.</p>'
+            '<p class="github-issues-modal-help">The token can stay empty when <code>GITHUB_TOKEN</code> is defined on the server. Repo, token, dry-run, API base URL and timeout stay in the block configuration.</p>'
             '</section>'
             '</div>'
             '<aside class="github-issues-modal-section">'
@@ -220,18 +220,18 @@ class GitHubIssuesBlock(BlockDefinition):
             f'aria-labelledby="{escape(tab_id, quote=True)}"{ "" if selected else " hidden" }>'
             '<div class="github-issues-modal-layout">'
             '<section class="github-issues-modal-section">'
-            '<div class="ports-editor-header"><span class="group-label">Contenu issue / commentaire</span></div>'
+            '<div class="ports-editor-header"><span class="group-label">Issue / comment content</span></div>'
             '<div class="field-group">'
-            '<label>Titre</label>'
-            f'<input data-block-config-field="title" type="text" autocomplete="off" spellcheck="false" placeholder="Titre pour create_issue" value="{escape(config["title"], quote=True)}" />'
+            '<label>Title</label>'
+            f'<input data-block-config-field="title" type="text" autocomplete="off" spellcheck="false" placeholder="Title for create_issue" value="{escape(config["title"], quote=True)}" />'
             '</div>'
             '<div class="field-group">'
-            '<label>Body / commentaire</label>'
-            '<textarea data-block-config-field="body" rows="12" spellcheck="false" placeholder="Corps issue ou commentaire. Peut aussi venir de l input actions.">'
+            '<label>Body / comment</label>'
+            '<textarea data-block-config-field="body" rows="12" spellcheck="false" placeholder="Issue or comment body. It can also come from the actions input.">'
             f'{escape(config["body"])}'
             '</textarea>'
             '</div>'
-            '<p class="github-issues-modal-help">Un input <code>actions</code> JSON peut fournir un payload multi-actions ou des champs d action. Un texte brut alimente <code>body</code> si le body est vide.</p>'
+            '<p class="github-issues-modal-help">An <code>actions</code> JSON input can carry a multi-action payload or single action fields. Raw text feeds <code>body</code> when the body is empty.</p>'
             '</section>'
             '<aside class="github-issues-modal-section">'
             '<div class="ports-editor-header"><span class="group-label">Meta actions</span></div>'
@@ -267,7 +267,7 @@ class GitHubIssuesBlock(BlockDefinition):
             f'{self._render_generic_modal_ports(node)}'
             '</section>'
             '<section class="github-issues-modal-section">'
-            '<div class="ports-editor-header"><span class="group-label">Dernier etat</span></div>'
+            '<div class="ports-editor-header"><span class="group-label">Last state</span></div>'
             f'{self._render_generic_modal_runtime(payload)}'
             '</section>'
             '</div>'
@@ -299,21 +299,21 @@ class GitHubIssuesBlock(BlockDefinition):
             f'<input data-block-config-field="per_page" data-block-value-type="integer" type="number" min="1" max="100" step="1" value="{config["per_page"]}" />'
             '</div>'
             '<div class="field-group">'
-            '<label>Timeout secondes</label>'
+            '<label>Timeout seconds</label>'
             f'<input data-block-config-field="timeout_sec" data-block-value-type="integer" type="number" min="1" max="{MAX_TIMEOUT_SEC}" step="1" value="{config["timeout_sec"]}" />'
             '</div>'
             '</div>'
             '<label class="checkbox-line">'
             f'<input data-block-config-field="dry_run" data-block-value-type="boolean" type="checkbox" {dry_run_checked} />'
-            '<span>Dry run pour les actions d ecriture</span>'
+            '<span>Dry run for write actions</span>'
             '</label>'
             '<label class="checkbox-line">'
             f'<input data-block-config-field="include_pull_requests" data-block-value-type="boolean" type="checkbox" {include_pr_checked} />'
-            '<span>Inclure les pull requests dans list_issues</span>'
+            '<span>Include pull requests in list_issues</span>'
             '</label>'
             '<label class="checkbox-line">'
             f'<input data-block-config-field="include_comments" data-block-value-type="boolean" type="checkbox" {include_comments_checked} />'
-            '<span>Recuperer le contenu des commentaires</span>'
+            '<span>Fetch the comment contents</span>'
             '</label>'
         )
 
@@ -322,7 +322,7 @@ class GitHubIssuesBlock(BlockDefinition):
 
         return (
             '<div class="field-group">'
-            '<label>Nom du bloc</label>'
+            '<label>Block name</label>'
             f'<input data-block-title-field type="text" autocomplete="off" value="{escape(title, quote=True)}" />'
             '</div>'
         )
@@ -343,7 +343,7 @@ class GitHubIssuesBlock(BlockDefinition):
                 template
                 .replace("{{ repo }}", escape(config["repo"], quote=True))
                 .replace("{{ api_base_url }}", escape(config["api_base_url"], quote=True))
-                .replace("{{ token_placeholder }}", "Token configure" if config["token"] else "github_pat_...")
+                .replace("{{ token_placeholder }}", "Token configured" if config["token"] else "github_pat_...")
                 .replace("{{ action_options }}", self._select_options(SUPPORTED_ACTIONS, config["action"]))
                 .replace("{{ state_options }}", self._select_options(STATE_VALUES, config["state"]))
                 .replace("{{ state_reason_options }}", self._select_options(STATE_REASON_VALUES, config["state_reason"]))
@@ -527,7 +527,7 @@ class GitHubIssuesBlock(BlockDefinition):
         if not config["repo"]:
             raise GitHubIssuesBlockError("repo GitHub manquant. Format attendu: owner/repo.")
         if not self._is_valid_repo(config["repo"]):
-            raise GitHubIssuesBlockError(f"repo GitHub invalide: {config['repo']}. Format attendu: owner/repo.")
+            raise GitHubIssuesBlockError(f"Invalid GitHub repo: {config['repo']}. Expected format: owner/repo.")
 
     def _validate_action_config(self, config: dict[str, Any], action: str) -> None:
         """Validate one action and its token requirements before dispatch."""
@@ -535,7 +535,7 @@ class GitHubIssuesBlock(BlockDefinition):
         if action not in SUPPORTED_ACTIONS:
             raise GitHubIssuesBlockError(f"Action GitHub Issues non supportee: {action}.")
         if action in WRITE_ACTIONS and not config["dry_run"] and not config["token"]:
-            raise GitHubIssuesBlockError("token GitHub requis pour une action d'ecriture.")
+            raise GitHubIssuesBlockError("A GitHub token is required for a write action.")
 
     def _is_multi_actions_payload(self, payload: dict[str, Any]) -> bool:
         """Return whether the parsed input uses the standard multi-actions shape."""
@@ -552,12 +552,12 @@ class GitHubIssuesBlock(BlockDefinition):
 
         issue_number = self._normalize_int(payload.get("issue_number"), default=0, minimum=0, maximum=999999999)
         if issue_number <= 0:
-            raise GitHubIssuesBlockError("issue_number requis a la racine du payload multi-actions.")
+            raise GitHubIssuesBlockError("issue_number is required at the root of the multi-action payload.")
         actions = payload.get("actions")
         if not isinstance(actions, list) or not actions:
-            raise GitHubIssuesBlockError("actions doit etre une liste non vide dans le payload multi-actions.")
+            raise GitHubIssuesBlockError("actions must be a non-empty list in the multi-action payload.")
         if not config["dry_run"] and not config["token"]:
-            raise GitHubIssuesBlockError("token GitHub requis pour une sequence d'actions d'ecriture.")
+            raise GitHubIssuesBlockError("A GitHub token is required for a sequence of write actions.")
 
         action_results: list[dict[str, Any]] = []
         failed = False
@@ -611,7 +611,7 @@ class GitHubIssuesBlock(BlockDefinition):
         """Build a single-action config from one multi-action entry."""
 
         if not isinstance(action_payload, dict):
-            raise GitHubIssuesBlockError("Chaque entree actions doit etre un objet JSON.")
+            raise GitHubIssuesBlockError("Every actions entry must be a JSON object.")
         requested_action = self._raw_action_name(action_payload)
         unit_action = self._normalize_multi_action_name(requested_action)
         action_config: dict[str, Any] = {**config, "action": unit_action, "issue_number": issue_number}
@@ -647,7 +647,7 @@ class GitHubIssuesBlock(BlockDefinition):
             "index": index,
             "action": self._raw_action_name(action_payload),
             "status": "skipped",
-            "reason": "Action ignoree apres une erreur precedente.",
+            "reason": "Action skipped after a previous error.",
         }
 
     def _dispatch_action(self, config: dict[str, Any]) -> dict[str, Any]:
@@ -782,7 +782,7 @@ class GitHubIssuesBlock(BlockDefinition):
         """Create one issue or return the planned request in dry-run mode."""
 
         if not config["title"]:
-            raise GitHubIssuesBlockError("title requis pour create_issue.")
+            raise GitHubIssuesBlockError("title is required for create_issue.")
         payload = {
             "title": config["title"],
             "body": config["body"],
@@ -802,7 +802,7 @@ class GitHubIssuesBlock(BlockDefinition):
 
         issue_number = self._required_issue_number(config)
         if not config["body"]:
-            raise GitHubIssuesBlockError("body requis pour comment_issue.")
+            raise GitHubIssuesBlockError("body is required for comment_issue.")
         return self._write_or_dry_run(
             config,
             action="comment_issue",
@@ -818,7 +818,7 @@ class GitHubIssuesBlock(BlockDefinition):
         issue_number = self._required_issue_number(config)
         labels = self._csv_values(config["labels"])
         if not labels:
-            raise GitHubIssuesBlockError("labels requis pour add_labels.")
+            raise GitHubIssuesBlockError("labels is required for add_labels.")
         return self._write_or_dry_run(
             config,
             action="add_labels",
@@ -834,7 +834,7 @@ class GitHubIssuesBlock(BlockDefinition):
         issue_number = self._required_issue_number(config)
         labels = self._csv_values(config["labels"])
         if not labels:
-            raise GitHubIssuesBlockError("labels requis pour remove_label.")
+            raise GitHubIssuesBlockError("labels is required for remove_label.")
         if config["dry_run"]:
             return self._dry_run_result(
                 config,
@@ -868,7 +868,7 @@ class GitHubIssuesBlock(BlockDefinition):
         issue_number = self._required_issue_number(config)
         assignees = self._csv_values(config["assignees"])
         if not assignees:
-            raise GitHubIssuesBlockError("assignees requis pour assign_issue.")
+            raise GitHubIssuesBlockError("assignees is required for assign_issue.")
         return self._write_or_dry_run(
             config,
             action="assign_issue",
@@ -948,7 +948,7 @@ class GitHubIssuesBlock(BlockDefinition):
                 "method": method,
                 "path": path,
                 "payload": payload,
-                "message": "Dry run: aucune requete d'ecriture envoyee a GitHub.",
+                "message": "Dry run: no write request sent to GitHub.",
             },
         }
 
@@ -1034,24 +1034,24 @@ class GitHubIssuesBlock(BlockDefinition):
             skipped = int(result.get("skipped_count") or 0)
             if result.get("ok"):
                 mode = "dry-run" if result.get("dry_run") else "OK"
-                return f"multi_actions {mode}: {succeeded}/{total} action(s) sur {repo}#{issue_number}."
+                return f"multi_actions {mode}: {succeeded}/{total} action(s) on {repo}#{issue_number}."
             return (
-                f"multi_actions erreur: {succeeded}/{total} action(s) executee(s), "
-                f"{failed} echec, {skipped} ignoree(s) sur {repo}#{issue_number}."
+                f"multi_actions error: {succeeded}/{total} action(s) executed, "
+                f"{failed} failed, {skipped} skipped on {repo}#{issue_number}."
             )
         if result.get("dry_run"):
-            return f"{action} dry-run pret pour {repo}."
+            return f"{action} dry-run ready for {repo}."
         if action == "list_issues":
             if result.get("comments_included"):
-                return f"{result.get('count', 0)} issue(s) lue(s), {result.get('comments_count', 0)} commentaire(s) depuis {repo}."
-            return f"{result.get('count', 0)} issue(s) lue(s) depuis {repo}."
+                return f"{result.get('count', 0)} issue(s) read, {result.get('comments_count', 0)} comment(s) from {repo}."
+            return f"{result.get('count', 0)} issue(s) read from {repo}."
         issue_number = result.get("issue_number")
         if issue_number:
-            return f"{action} OK sur {repo}#{issue_number}."
+            return f"{action} OK on {repo}#{issue_number}."
         data = result.get("data")
         if isinstance(data, dict) and data.get("number"):
-            return f"{action} OK sur {repo}#{data.get('number')}."
-        return f"{action} OK sur {repo}."
+            return f"{action} OK on {repo}#{data.get('number')}."
+        return f"{action} OK on {repo}."
 
     def _metadata(self, result: dict[str, Any]) -> dict[str, Any]:
         """Return safe structured metadata without request secrets."""
@@ -1089,7 +1089,7 @@ class GitHubIssuesBlock(BlockDefinition):
 
         issue_number = int(config.get("issue_number") or 0)
         if issue_number <= 0:
-            raise GitHubIssuesBlockError(f"issue_number requis pour {config.get('action')}.")
+            raise GitHubIssuesBlockError(f"issue_number is required for {config.get('action')}.")
         return issue_number
 
     def _repo_path(self, repo: str) -> str:

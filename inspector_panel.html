@@ -16,7 +16,7 @@
 
   <div class="inspector-view {{ general_hidden }}" data-inspector-panel-tab="general">
     <div class="field-group {{ title_hidden }}">
-      <label>Nom du node</label>
+      <label>Node name</label>
       <input data-node-title-input type="text" placeholder="{{ node_title_placeholder }}" value="{{ node_title }}" />
     </div>
 
@@ -46,7 +46,7 @@
       <input data-block-config-field="api_base_url" type="text" autocomplete="off" spellcheck="false" value="{{ api_base_url }}" />
     </div>
     <div class="field-group">
-      <label>Timeout secondes</label>
+      <label>Timeout seconds</label>
       <input data-block-config-field="timeout_sec" data-block-value-type="integer" type="number" min="1" step="1" value="{{ timeout_sec }}" />
     </div>
     <div class="field-group">
@@ -55,24 +55,24 @@
     </div>
     <label class="checkbox-line">
       <input data-block-config-field="dry_run" data-block-value-type="boolean" type="checkbox" {{ dry_run_checked }} />
-      <span>Dry run pour les actions d'ecriture</span>
+      <span>Dry run for write actions</span>
     </label>
     <label class="checkbox-line">
       <input data-block-config-field="include_pull_requests" data-block-value-type="boolean" type="checkbox" {{ include_pull_requests_checked }} />
-      <span>Inclure les pull requests dans list_issues</span>
+      <span>Include pull requests in list_issues</span>
     </label>
     <label class="checkbox-line">
       <input data-block-config-field="include_comments" data-block-value-type="boolean" type="checkbox" {{ include_comments_checked }} />
-      <span>Recuperer le contenu des commentaires</span>
+      <span>Fetch the comment contents</span>
     </label>
 
     <div class="field-group">
-      <label>Titre</label>
-      <input data-block-config-field="title" type="text" autocomplete="off" spellcheck="false" placeholder="Titre pour create_issue" value="{{ title }}" />
+      <label>Title</label>
+      <input data-block-config-field="title" type="text" autocomplete="off" spellcheck="false" placeholder="Title for create_issue" value="{{ title }}" />
     </div>
     <div class="field-group">
-      <label>Body / commentaire</label>
-      <textarea data-block-config-field="body" rows="7" spellcheck="false" placeholder="Corps issue ou commentaire. Peut aussi venir de l'input actions.">{{ body }}</textarea>
+      <label>Body / comment</label>
+      <textarea data-block-config-field="body" rows="7" spellcheck="false" placeholder="Issue or comment body. It can also come from the actions input.">{{ body }}</textarea>
     </div>
     <div class="field-group">
       <label>Labels</label>
@@ -88,32 +88,32 @@
     </div>
 
     <p class="inspector-copy">
-      Input <code>actions</code>: JSON action unique ou format multi-actions standard avec <code>issue_number</code> racine et <code>actions[]</code>.
-      Actions ecriture: <code>create_issue</code>, <code>comment_issue</code>, <code>add_labels</code>,
+      Input <code>actions</code>: a single JSON action, or the standard multi-action format with a root <code>issue_number</code> and <code>actions[]</code>.
+      Write actions: <code>create_issue</code>, <code>comment_issue</code>, <code>add_labels</code>,
       <code>remove_label</code>, <code>assign_issue</code>, <code>close_issue</code>, <code>reopen_issue</code>.
-      Avec <code>dry_run</code>, aucune ecriture GitHub n'est envoyee.
+      With <code>dry_run</code>, no GitHub write is sent.
     </p>
     <div class="inspector-actions {{ actions_hidden }}">
-      <button class="solid-btn" data-block-apply type="button" disabled>Appliquer</button>
-      <button class="ghost-btn {{ duplicate_hidden }}" data-block-action="duplicate" type="button">Dupliquer</button>
-      <button class="danger-btn {{ delete_hidden }}" data-block-action="delete" type="button">Supprimer le bloc</button>
+      <button class="solid-btn" data-block-apply type="button" disabled>Apply</button>
+      <button class="ghost-btn {{ duplicate_hidden }}" data-block-action="duplicate" type="button">Duplicate</button>
+      <button class="danger-btn {{ delete_hidden }}" data-block-action="delete" type="button">Delete the block</button>
     </div>
   </div>
 
   <div class="inspector-view {{ ports_hidden }}" data-inspector-panel-tab="ports">
     <div class="ports-editor-section">
       <div class="ports-editor-header">
-        <span class="group-label">Entrees</span>
+        <span class="group-label">Inputs</span>
         <span class="ports-editor-actions">
-          <button class="ghost-btn add-port-btn {{ add_input_hidden }}" data-add-input-port type="button" {{ add_input_disabled }}>+ Ajouter une entree</button>
+          <button class="ghost-btn add-port-btn {{ add_input_hidden }}" data-add-input-port type="button" {{ add_input_disabled }}>+ Add an input</button>
         </span>
       </div>
       <div class="ports-editor-list">{{ inputs_html }}</div>
     </div>
     <div class="ports-editor-section">
       <div class="ports-editor-header">
-        <span class="group-label">Sorties</span>
-        <button class="ghost-btn add-port-btn {{ add_output_hidden }}" data-add-output-port type="button" {{ add_output_disabled }}>+ Ajouter une sortie</button>
+        <span class="group-label">Outputs</span>
+        <button class="ghost-btn add-port-btn {{ add_output_hidden }}" data-add-output-port type="button" {{ add_output_disabled }}>+ Add an output</button>
       </div>
       <div class="ports-editor-list">{{ outputs_html }}</div>
     </div>

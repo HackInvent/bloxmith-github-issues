@@ -98,8 +98,8 @@ class FakeGitHubIssuesHandler(BaseHTTPRequestHandler):
             self._send_json(
                 200,
                 [
-                    {"id": 201, "body": "Premier commentaire", "user": {"login": "reviewer"}},
-                    {"id": 202, "body": "Deuxieme commentaire", "user": {"login": "maintainer"}},
+                    {"id": 201, "body": "First comment", "user": {"login": "reviewer"}},
+                    {"id": 202, "body": "Second comment", "user": {"login": "maintainer"}},
                 ],
             )
             return
@@ -253,7 +253,7 @@ def multi_actions_payload() -> str:
             "actions": [
                 {"action": "add_labels", "labels": ["status:ready-for-dev", "priority:p2"]},
                 {"action": "remove_labels", "labels": ["todo"]},
-                {"action": "add_comment", "body": "Commentaire de triage."},
+                {"action": "add_comment", "body": "Triage comment."},
                 {"action": "close_issue", "state_reason": "not_planned"},
             ],
         },
@@ -284,7 +284,7 @@ def run_github_issues_case(runtime_mode: str, fake_server: FakeGitHubIssuesHttpS
     """Run the block through the public run API in one runtime mode."""
 
     with isolated_server() as server:
-        # Les surfaces sont des assets de release : le bundled kind n'en sert aucun.
+        # Surfaces are release assets: a bundled kind serves none of them.
         model = install_test_package(server, "github_issues")
         key = quote(release_key(model), safe="")
         served = lambda payload, suffix: next(
@@ -297,15 +297,15 @@ def run_github_issues_case(runtime_mode: str, fake_server: FakeGitHubIssuesHttpS
     raw_result = run.get("output_values", {}).get("github-issues-1:1", {}).get("value") or "{}"
     result = json.loads(raw_result)
     expect(run.get("status") == "success", f"Le run GitHub Issues {runtime_mode} doit reussir.")
-    expect(result.get("action") == "list_issues", "Le bloc doit executer list_issues.")
-    expect(result.get("count") == 1, "list_issues doit filtrer les pull requests par defaut.")
-    expect("pull_request" not in raw_result, "La sortie filtree ne doit pas contenir de pull_request.")
-    expect(SECRET not in logs and SECRET not in node_logs, "Le token GitHub ne doit pas apparaitre dans les logs.")
-    expect("fallback centralized" not in logs, "Le run ne doit pas fallback centralise.")
+    expect(result.get("action") == "list_issues", "The block must execute list_issues.")
+    expect(result.get("count") == 1, "list_issues must filter pull requests out by default.")
+    expect("pull_request" not in raw_result, "The filtered output must not contain any pull_request.")
+    expect(SECRET not in logs and SECRET not in node_logs, "The GitHub token must not appear in the logs.")
+    expect("fallback centralized" not in logs, "The run must not fall back to centralized.")
     if runtime_mode == "zeromq_active":
         expect(
             run.get("results", {}).get("github-issues-1", {}).get("transport") == "zeromq_active",
-            "github_issues doit etre execute via zeromq_active.",
+            "github_issues must run through zeromq_active.",
         )
     return run
 
@@ -322,16 +322,16 @@ def run_github_issues_multi_actions_case(runtime_mode: str, fake_server: FakeGit
     raw_result = run.get("output_values", {}).get("github-issues-1:1", {}).get("value") or "{}"
     result = json.loads(raw_result)
     expect(run.get("status") == "success", f"Le run GitHub Issues multi-actions {runtime_mode} doit reussir.")
-    expect(result.get("action") == "multi_actions", "Le payload standard doit declencher multi_actions.")
-    expect(result.get("succeeded_count") == 4, "Les quatre actions dry-run doivent reussir.")
-    expect([item.get("status") for item in result.get("actions", [])] == ["success", "success", "success", "success"], "Chaque action doit avoir un statut success.")
+    expect(result.get("action") == "multi_actions", "The standard payload must trigger multi_actions.")
+    expect(result.get("succeeded_count") == 4, "The four dry-run actions must succeed.")
+    expect([item.get("status") for item in result.get("actions", [])] == ["success", "success", "success", "success"], "Every action must carry a success status.")
     expect(result.get("actions", [])[1].get("unit_action") == "remove_label", "remove_labels doit reutiliser l'action unitaire remove_label.")
-    expect(len(fake_server.requests_log) == before_requests, "Le multi-actions dry-run ne doit pas contacter GitHub.")
-    expect("fallback centralized" not in logs, "Le run multi-actions ne doit pas fallback centralise.")
+    expect(len(fake_server.requests_log) == before_requests, "The dry-run multi-action must not contact GitHub.")
+    expect("fallback centralized" not in logs, "The multi-action run must not fall back to centralized.")
     if runtime_mode == "zeromq_active":
         expect(
             run.get("results", {}).get("github-issues-1", {}).get("transport") == "zeromq_active",
-            "github_issues multi-actions doit etre execute via zeromq_active.",
+            "The github_issues multi-action must run through zeromq_active.",
         )
     return run
 
@@ -367,12 +367,12 @@ def test_http_requests(fake_server: FakeGitHubIssuesHttpServer) -> None:
     """TC1 - Verify GitHub Issues read requests and headers."""
 
     list_requests = [request for request in fake_server.requests_log if request["method"] == "GET" and request["path"].endswith("/issues")]
-    expect(len(list_requests) >= 2, "Le faux endpoint Issues doit recevoir une requete de liste par run.")
+    expect(len(list_requests) >= 2, "The fake Issues endpoint must receive one list request per run.")
     for request in list_requests:
-        expect(request["authorization"] == f"Bearer {SECRET}", "Le token doit etre envoye en bearer token.")
-        expect(request["api_version"] == "2022-11-28", "La version REST GitHub doit etre explicite.")
-        expect(request["query"].get("state") == ["all"], "L input actions doit pouvoir surcharger state pour une action simple.")
-        expect(request["query"].get("per_page") == ["30"], "Le bloc doit envoyer per_page.")
+        expect(request["authorization"] == f"Bearer {SECRET}", "The token must be sent as a bearer token.")
+        expect(request["api_version"] == "2022-11-28", "The GitHub REST version must be explicit.")
+        expect(request["query"].get("state") == ["all"], "The actions input must be able to override state for a single action.")
+        expect(request["query"].get("per_page") == ["30"], "The block must send per_page.")
 
 
 def test_comment_enrichment(fake_server: FakeGitHubIssuesHttpServer) -> None:
@@ -391,14 +391,14 @@ def test_comment_enrichment(fake_server: FakeGitHubIssuesHttpServer) -> None:
             }
         )
     )
-    expect(list_result.status == "success", "list_issues avec include_comments doit reussir.")
+    expect(list_result.status == "success", "list_issues with include_comments must succeed.")
     parsed_list = json.loads(list_result.outputs[0].value)
-    expect(parsed_list.get("comments_included") is True, "Le resultat doit signaler que les commentaires sont inclus.")
-    expect(parsed_list.get("comments_count") == 2, "Le resultat doit compter les commentaires attaches.")
-    expect(parsed_list.get("data", [])[0].get("comments_data", [])[0].get("body") == "Premier commentaire", "Chaque issue doit contenir comments_data.")
+    expect(parsed_list.get("comments_included") is True, "The result must report that the comments are included.")
+    expect(parsed_list.get("comments_count") == 2, "The result must count the attached comments.")
+    expect(parsed_list.get("data", [])[0].get("comments_data", [])[0].get("body") == "First comment", "Every issue must carry comments_data.")
     comment_requests = [request for request in fake_server.requests_log if request["method"] == "GET" and request["path"].endswith("/issues/7/comments")]
-    expect(comment_requests, "Le bloc doit appeler le endpoint GitHub des commentaires quand include_comments=true.")
-    expect(comment_requests[-1]["query"].get("per_page") == ["30"], "La recuperation des commentaires doit respecter per_page.")
+    expect(comment_requests, "The block must call the GitHub comments endpoint when include_comments=true.")
+    expect(comment_requests[-1]["query"].get("per_page") == ["30"], "Fetching the comments must respect per_page.")
 
     view_result = block.execute_runtime(
         unit_context(
@@ -412,9 +412,9 @@ def test_comment_enrichment(fake_server: FakeGitHubIssuesHttpServer) -> None:
             }
         )
     )
-    expect(view_result.status == "success", "view_issue avec include_comments doit reussir.")
+    expect(view_result.status == "success", "view_issue with include_comments must succeed.")
     parsed_view = json.loads(view_result.outputs[0].value)
-    expect(parsed_view.get("data", {}).get("comments_data", [])[1].get("body") == "Deuxieme commentaire", "view_issue doit aussi enrichir l issue avec comments_data.")
+    expect(parsed_view.get("data", {}).get("comments_data", [])[1].get("body") == "Second comment", "view_issue must enrich the issue with comments_data too.")
 
 
 def test_write_actions_and_guards(fake_server: FakeGitHubIssuesHttpServer) -> None:
@@ -434,9 +434,9 @@ def test_write_actions_and_guards(fake_server: FakeGitHubIssuesHttpServer) -> No
             }
         )
     )
-    expect(dry_create.status == "success", "Une creation dry-run doit reussir sans token.")
-    expect(len(fake_server.requests_log) == before, "Le dry-run ne doit pas contacter GitHub.")
-    expect("Dry run" in (dry_create.outputs[0].value or ""), "Le resultat dry-run doit expliquer qu'aucune requete n'est envoyee.")
+    expect(dry_create.status == "success", "A dry-run creation must succeed without a token.")
+    expect(len(fake_server.requests_log) == before, "The dry-run must not contact GitHub.")
+    expect("Dry run" in (dry_create.outputs[0].value or ""), "The dry-run result must explain that no request is sent.")
 
     view_issue = block.execute_runtime(
         unit_context(
@@ -449,8 +449,8 @@ def test_write_actions_and_guards(fake_server: FakeGitHubIssuesHttpServer) -> No
             }
         )
     )
-    expect(view_issue.status == "success", "La lecture d'une issue precise doit reussir.")
-    expect("Real issue" in view_issue.outputs[0].value, "La sortie view_issue doit contenir l'issue lue.")
+    expect(view_issue.status == "success", "Reading one precise issue must succeed.")
+    expect("Real issue" in view_issue.outputs[0].value, "The view_issue output must contain the issue that was read.")
 
     ignored_payload_input = block.execute_runtime(
         unit_context(
@@ -465,7 +465,7 @@ def test_write_actions_and_guards(fake_server: FakeGitHubIssuesHttpServer) -> No
         )
     )
     ignored_payload_result = json.loads(ignored_payload_input.outputs[0].value)
-    expect(ignored_payload_result.get("action") == "view_issue", "Un input nomme payload ne doit plus etre consomme.")
+    expect(ignored_payload_result.get("action") == "view_issue", "An input named payload must no longer be consumed.")
 
     real_comment = block.execute_runtime(
         unit_context(
@@ -477,15 +477,15 @@ def test_write_actions_and_guards(fake_server: FakeGitHubIssuesHttpServer) -> No
                 "issue_number": 7,
                 "dry_run": False,
             },
-            inputs={"actions": "commentaire depuis actions"},
-            input_message="commentaire depuis actions",
+            inputs={"actions": "comment from actions"},
+            input_message="comment from actions",
         )
     )
-    expect(real_comment.status == "success", "Un commentaire authentifie doit reussir.")
+    expect(real_comment.status == "success", "An authenticated comment must succeed.")
     last_request = fake_server.requests_log[-1]
-    expect(last_request["method"] == "POST" and last_request["path"].endswith("/issues/7/comments"), "Le commentaire doit appeler le bon endpoint.")
-    expect(last_request["payload"].get("body") == "commentaire depuis actions", "Le texte actions doit alimenter le commentaire.")
-    expect(SECRET not in "\n".join(real_comment.logs), "Le token ne doit pas etre loggue.")
+    expect(last_request["method"] == "POST" and last_request["path"].endswith("/issues/7/comments"), "The comment must call the right endpoint.")
+    expect(last_request["payload"].get("body") == "comment from actions", "The actions text must feed the comment.")
+    expect(SECRET not in "\n".join(real_comment.logs), "The token must not be logged.")
 
     multi_dry_run = block.execute_runtime(
         unit_context(
@@ -493,15 +493,15 @@ def test_write_actions_and_guards(fake_server: FakeGitHubIssuesHttpServer) -> No
             inputs={"actions": multi_actions_payload()},
         )
     )
-    expect(multi_dry_run.status == "success", "Un payload multi-actions dry-run doit reussir sans token.")
+    expect(multi_dry_run.status == "success", "A dry-run multi-action payload must succeed without a token.")
     multi_result = json.loads(multi_dry_run.outputs[0].value)
-    expect(multi_result.get("action") == "multi_actions", "Le resultat doit identifier la sequence multi_actions.")
-    expect(multi_result.get("issue_number") == 7, "issue_number doit etre lu une seule fois a la racine.")
-    expect(multi_result.get("succeeded_count") == 4, "Les quatre actions standard doivent etre executees en dry-run.")
-    expect([item.get("action") for item in multi_result.get("actions", [])] == ["add_labels", "remove_labels", "add_comment", "close_issue"], "Les actions doivent rester dans l'ordre du payload.")
+    expect(multi_result.get("action") == "multi_actions", "The result must identify the multi_actions sequence.")
+    expect(multi_result.get("issue_number") == 7, "issue_number must be read once, at the root.")
+    expect(multi_result.get("succeeded_count") == 4, "The four standard actions must run in dry-run.")
+    expect([item.get("action") for item in multi_result.get("actions", [])] == ["add_labels", "remove_labels", "add_comment", "close_issue"], "The actions must keep the payload order.")
     expect(multi_result["actions"][1].get("unit_action") == "remove_label", "remove_labels doit reutiliser l'implementation remove_label existante.")
     expect(multi_result["actions"][2].get("unit_action") == "comment_issue", "add_comment doit reutiliser l'implementation comment_issue existante.")
-    expect("multi_actions dry-run" in multi_dry_run.outputs[1].value, "Le summary doit decrire la sequence multi-actions.")
+    expect("multi_actions dry-run" in multi_dry_run.outputs[1].value, "The summary must describe the multi-action sequence.")
 
     before_multi_failure = len(fake_server.requests_log)
     multi_failure_payload = json.dumps(
@@ -510,7 +510,7 @@ def test_write_actions_and_guards(fake_server: FakeGitHubIssuesHttpServer) -> No
             "actions": [
                 {"action": "add_labels", "labels": ["triage"]},
                 {"action": "remove_labels", "labels": ["missing"]},
-                {"action": "add_comment", "body": "Ne doit pas etre envoye."},
+                {"action": "add_comment", "body": "Must not be sent."},
             ],
         },
         ensure_ascii=False,
@@ -521,13 +521,13 @@ def test_write_actions_and_guards(fake_server: FakeGitHubIssuesHttpServer) -> No
             inputs={"actions": multi_failure_payload},
         )
     )
-    expect(multi_failure.status == "failed", "Une erreur dans la sequence doit marquer le resultat runtime en echec.")
+    expect(multi_failure.status == "failed", "An error in the sequence must mark the runtime result as failed.")
     failed_result = json.loads(multi_failure.outputs[0].value)
-    expect(failed_result.get("ok") is False, "Le resultat structure doit indiquer ok=false.")
-    expect([item.get("status") for item in failed_result.get("actions", [])] == ["success", "failed", "skipped"], "Les actions deja executees, echouees et ignorees doivent etre conservees.")
-    expect("GitHub HTTP 404" in failed_result.get("actions", [])[1].get("error", ""), "L'action echouee doit porter son erreur.")
+    expect(failed_result.get("ok") is False, "The structured result must report ok=false.")
+    expect([item.get("status") for item in failed_result.get("actions", [])] == ["success", "failed", "skipped"], "The executed, failed and skipped actions must all be kept.")
+    expect("GitHub HTTP 404" in failed_result.get("actions", [])[1].get("error", ""), "The failed action must carry its error.")
     new_requests = fake_server.requests_log[before_multi_failure:]
-    expect([request["method"] for request in new_requests] == ["POST", "DELETE"], "La sequence doit s'arreter apres l'erreur et ne pas commenter.")
+    expect([request["method"] for request in new_requests] == ["POST", "DELETE"], "The sequence must stop after the error and must not comment.")
 
     missing_token = block.execute_runtime(
         unit_context(
@@ -541,16 +541,16 @@ def test_write_actions_and_guards(fake_server: FakeGitHubIssuesHttpServer) -> No
             }
         )
     )
-    expect(missing_token.status == "failed", "Une ecriture non dry-run doit refuser un token manquant.")
-    expect("token GitHub requis" in missing_token.error, "L'erreur doit expliquer le token manquant.")
+    expect(missing_token.status == "failed", "A non dry-run write must refuse a missing token.")
+    expect("GitHub token is required" in missing_token.error, "The error must explain the missing token.")
 
     invalid_repo = block.execute_runtime(
         unit_context(
             config={"api_base_url": fake_server.base_url, "repo": "invalid", "action": "list_issues"}
         )
     )
-    expect(invalid_repo.status == "failed", "Un repo invalide doit echouer proprement.")
-    expect("repo GitHub invalide" in invalid_repo.error, "L'erreur doit expliquer le format owner/repo.")
+    expect(invalid_repo.status == "failed", "An invalid repo must fail cleanly.")
+    expect("Invalid GitHub repo" in invalid_repo.error, "The error must explain the owner/repo format.")
 
     dry_run_actions = [
         ("add_labels", {"issue_number": 7, "labels": "bug"}),
@@ -573,8 +573,8 @@ def test_write_actions_and_guards(fake_server: FakeGitHubIssuesHttpServer) -> No
             )
         )
         expect(planned.status == "success", f"{action} dry-run doit reussir.")
-        expect(action in planned.outputs[0].value, f"Le plan {action} doit etre visible dans le JSON resultat.")
-    expect(len(fake_server.requests_log) == before_plans, "Les plans dry-run ne doivent pas appeler GitHub.")
+        expect(action in planned.outputs[0].value, f"Le plan {action} must be visible in the result JSON.")
+    expect(len(fake_server.requests_log) == before_plans, "Dry-run plans must not call GitHub.")
 
 
 def test_github_issues_ui_contract(fake_server: FakeGitHubIssuesHttpServer) -> None:
@@ -586,34 +586,34 @@ def test_github_issues_ui_contract(fake_server: FakeGitHubIssuesHttpServer) -> N
     assets = rendered.get("assets") or []
     css = (ROOT / "blocs/github_issues/assets/css/block_modal.css").read_text(encoding="utf-8")
     js = (ROOT / "blocs/github_issues/assets/js/block_modal.js").read_text(encoding="utf-8")
-    expect('data-node-kind="github_issues"' in html, "Le modal GitHub Issues doit venir du bloc.")
-    expect("cw-github-issues-modal" in html, "Le modal GitHub Issues doit utiliser le layout large du bloc.")
-    expect('data-block-runtime-refresh="autonomous"' in html, "Le modal GitHub Issues doit gerer son refresh runtime.")
-    expect('data-github-issues-tab-id="action"' in html, "Le modal doit exposer l'onglet Action.")
-    expect('data-github-issues-tab-id="payload"' in html, "Le modal doit exposer l'onglet Actions input.")
-    expect('data-github-issues-tab-id="status"' in html, "Le modal doit exposer l'onglet Ports & etat.")
-    expect('data-block-config-field="repo"' in html, "Le repo doit etre editable dans le modal.")
-    expect('data-block-config-field="token"' in html, "Le token doit etre editable dans le modal.")
-    expect('data-block-config-field="dry_run"' in html, "Le dry-run doit etre editable dans le modal.")
-    expect('data-block-config-field="include_comments"' in html, "include_comments doit etre editable dans le modal.")
-    expect(SECRET not in html, "Le token ne doit pas etre rendu en clair dans le modal.")
-    expect("width: min(1180px" in css, "Le CSS doit agrandir le modal GitHub Issues.")
-    expect("export function mount" in js, "Le JS doit monter le modal GitHub Issues via le registre block UI.")
+    expect('data-node-kind="github_issues"' in html, "The GitHub Issues modal must come from the block.")
+    expect("cw-github-issues-modal" in html, "The GitHub Issues modal must use the block's wide layout.")
+    expect('data-block-runtime-refresh="autonomous"' in html, "The GitHub Issues modal must own its runtime refresh.")
+    expect('data-github-issues-tab-id="action"' in html, "The modal must expose the Action tab.")
+    expect('data-github-issues-tab-id="payload"' in html, "The modal must expose the Actions input tab.")
+    expect('data-github-issues-tab-id="status"' in html, "The modal must expose the Ports and state tab.")
+    expect('data-block-config-field="repo"' in html, "The repo must be editable in the modal.")
+    expect('data-block-config-field="token"' in html, "The token must be editable in the modal.")
+    expect('data-block-config-field="dry_run"' in html, "The dry-run must be editable in the modal.")
+    expect('data-block-config-field="include_comments"' in html, "include_comments must be editable in the modal.")
+    expect(SECRET not in html, "The token must not be rendered in clear text in the modal.")
+    expect("width: min(1180px" in css, "The CSS must enlarge the GitHub Issues modal.")
+    expect("export function mount" in js, "The JS must mount the GitHub Issues modal through the block UI registry.")
 
     inspector = render_block_inspector_panel("github_issues", {"node": node})
     inspector_html = str(inspector.get("html") or "")
-    expect("cw-github-issues-inspector" in inspector_html, "L'inspector GitHub Issues doit venir du bloc.")
-    expect("GitHub Issues" in inspector_html and "Integration" in inspector_html, "La metadata inspector doit etre renseignee.")
-    expect('class="field-grid"' not in inspector_html, "L'inspector GitHub Issues doit afficher un attribut par ligne.")
-    expect('data-block-config-field="action"' in inspector_html, "L'action doit etre editable dans l'inspector.")
-    expect('data-block-config-field="token"' in inspector_html, "Le token doit etre editable dans l'inspector.")
-    expect('data-block-config-field="include_comments"' in inspector_html, "include_comments doit etre editable dans l'inspector.")
-    expect(SECRET not in inspector_html, "Le token ne doit pas etre rendu en clair dans l'inspector.")
+    expect("cw-github-issues-inspector" in inspector_html, "The GitHub Issues inspector must come from the block.")
+    expect("GitHub Issues" in inspector_html and "Integration" in inspector_html, "The inspector metadata must be filled in.")
+    expect('class="field-grid"' not in inspector_html, "The GitHub Issues inspector must show one attribute per line.")
+    expect('data-block-config-field="action"' in inspector_html, "The action must be editable in the inspector.")
+    expect('data-block-config-field="token"' in inspector_html, "The token must be editable in the inspector.")
+    expect('data-block-config-field="include_comments"' in inspector_html, "include_comments must be editable in the inspector.")
+    expect(SECRET not in inspector_html, "The token must not be rendered in clear text in the inspector.")
 
     card = render_block_node_card("github_issues", {"node": node})
     card_html = str(card.get("html") or "")
-    expect("data-github-issues-node-card" in card_html, "La node-card GitHub Issues doit venir du bloc.")
-    expect("list_issues" in card_html and FULL_REPO in card_html, "La node-card doit resumer action et repo.")
+    expect("data-github-issues-node-card" in card_html, "The GitHub Issues node card must come from the block.")
+    expect("list_issues" in card_html and FULL_REPO in card_html, "The node card must summarize the action and the repo.")
 
 
 def main() -> None:
