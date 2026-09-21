@@ -296,7 +296,7 @@ def run_github_issues_case(runtime_mode: str, fake_server: FakeGitHubIssuesHttpS
     node_logs = "\n".join(run.get("node_logs", {}).get("github-issues-1", []))
     raw_result = run.get("output_values", {}).get("github-issues-1:1", {}).get("value") or "{}"
     result = json.loads(raw_result)
-    expect(run.get("status") == "success", f"Le run GitHub Issues {runtime_mode} doit reussir.")
+    expect(run.get("status") == "success", f"The GitHub Issues {runtime_mode} run must succeed.")
     expect(result.get("action") == "list_issues", "The block must execute list_issues.")
     expect(result.get("count") == 1, "list_issues must filter pull requests out by default.")
     expect("pull_request" not in raw_result, "The filtered output must not contain any pull_request.")
@@ -321,7 +321,7 @@ def run_github_issues_multi_actions_case(runtime_mode: str, fake_server: FakeGit
     logs = "\n".join(run.get("logs", []))
     raw_result = run.get("output_values", {}).get("github-issues-1:1", {}).get("value") or "{}"
     result = json.loads(raw_result)
-    expect(run.get("status") == "success", f"Le run GitHub Issues multi-actions {runtime_mode} doit reussir.")
+    expect(run.get("status") == "success", f"The GitHub Issues multi-action {runtime_mode} run must succeed.")
     expect(result.get("action") == "multi_actions", "The standard payload must trigger multi_actions.")
     expect(result.get("succeeded_count") == 4, "The four dry-run actions must succeed.")
     expect([item.get("status") for item in result.get("actions", [])] == ["success", "success", "success", "success"], "Every action must carry a success status.")
