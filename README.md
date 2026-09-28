@@ -10,9 +10,6 @@ Verified BloxSmith versions: **1.0.9** (bundled-block tests; see [test evidence]
 
 [![GITHUB ISSUES — Uses the GitHub Issues API for maintainer actions.](media/thumbnail.webp)](media/cover.png)
 
-*Concept illustration. [Artwork and generation prompt](media/README.md).*
-
-
 ## Role
 
 `github_issues` calls the GitHub Issues REST API to support maintainer actions from a workflow.
