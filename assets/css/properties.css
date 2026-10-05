@@ -1,4 +1,7 @@
 /* Block-owned properties ergonomics. No canvas, runtime or media-player rules. */
+[data-block-release="github_issues@0.1.0"] .github-issues-safety { border-top: 1px solid var(--line, #dce4ed); margin: 16px 0; padding-top: 12px; }
+[data-block-release="github_issues@0.1.0"] .github-issues-safety summary { cursor: pointer; font-weight: 600; min-height: 40px; padding-block: 8px; }
+[data-block-release="github_issues@0.1.0"] .github-issues-safety .field-hint { display: block; font-size: 12px; line-height: 1.5; color: var(--muted, #637187); }
 [data-block-release="github_issues@0.1.0"] [data-properties-surface],
 [data-block-release="github_issues@0.1.0"][data-properties-surface] { box-sizing: border-box; min-width: 0; }
 [data-block-release="github_issues@0.1.0"] [data-properties-surface] *,

@@ -48,6 +48,10 @@
   "config": {
     "api_base_url": "https://api.github.com",
     "token": "",
+    "token_ref": "",
+    "allowed_actions": "",
+    "error_mode": "fail",
+    "require_revision": false,
     "repo": "",
     "action": "list_issues",
     "issue_number": 0,
@@ -61,6 +65,9 @@
     "include_comments": false,
     "dry_run": true,
     "per_page": 30,
+    "page": 1,
+    "assignee": "",
+    "since": "",
     "timeout_sec": 30
   },
   "runtime": {

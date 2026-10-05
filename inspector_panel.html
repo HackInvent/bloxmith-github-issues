@@ -50,9 +50,10 @@
       <input data-block-config-field="timeout_sec" data-block-value-type="integer" type="number" min="1" step="1" value="{{ timeout_sec }}" />
     </div>
     <div class="field-group">
-      <label>Token GitHub</label>
+      <label>Legacy GitHub token (optional)</label>
       <input data-block-config-field="token" data-block-skip-empty="true" type="password" autocomplete="off" spellcheck="false" placeholder="{{ token_placeholder }}" />
     </div>
+    {{ safety_fields }}
     <label class="checkbox-line">
       <input data-block-config-field="dry_run" data-block-value-type="boolean" type="checkbox" {{ dry_run_checked }} />
       <span>Dry run for write actions</span>

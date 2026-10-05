@@ -5,7 +5,7 @@
   "maintained_by": "HackInvent",
   "source": {
     "algorithm": "block-source-v1",
-    "sha256": "2b82b373b03942e9bb93649e48f0dbccce1bbacee23b4a8a609c802a4b3decf4"
+    "sha256": "b0d0cac056d8f6154a993bafb321d5377bc77d9dee4d348a4bfbb8e3d4ed96e6"
   },
   "bloxsmith_compatibility": [
     "1.0.9"
@@ -14,29 +14,19 @@
   "validations": [
     {
       "bloxsmith_version": "1.0.9",
-      "framework_commit": "57e7ba724774c646df175ab870afd601d8aa4cd5",
-      "framework_source_sha256": "48b1b447ea65fcc6e6b828b2a6b624febe02d878814142b18917e4a5fc40963e",
-      "tested_at": "2026-09-21T18:17:46.011263+00:00",
+      "framework_commit": "f1a87f6369d2acfb8be41d23ea849384cd461c86",
+      "framework_source_sha256": "66e36a13fd9a23a0a0576ec81552d6e479671db6db9b8692cc7486c5aac4f3b8",
+      "tested_at": "2026-10-04T20:00:22.213120+00:00",
       "status": "passed",
       "installation_mode": "bundled",
       "suite_paths": [
-        "tests/F5.24_github_issues_block.py"
+        "tests/F5.24_github_issues_block.py",
+        "tests/F5.25_github_issues_controlled.py",
+        "tests/F5.26_github_issues_wallet_runtime.py",
+        "tests/F8.25_github_issues_settings.py"
       ],
-      "suite_count": 1,
-      "report_sha256": "130258e60381600c1f1e092c12d6a8e97320862485e132600c11859cc9d7b5e0"
-    },
-    {
-      "bloxsmith_version": "1.0.9",
-      "framework_commit": "ddb6d0f054d92e75b9ff1cdb9e9ee16457c5f962",
-      "framework_source_sha256": "ce69a55fa289983c81e579c5beb96ff22ae8911f8efabb602c4054e639a3061f",
-      "tested_at": "2026-09-22T00:16:57.397945+00:00",
-      "status": "passed",
-      "installation_mode": "bundled",
-      "suite_paths": [
-        "tests/F5.24_github_issues_block.py"
-      ],
-      "suite_count": 1,
-      "report_sha256": "5edfda3ee15686cc4faddd951b973fa1a6ae9a0aaa375aa9d30bfdc062ad1dd7"
+      "suite_count": 4,
+      "report_sha256": "472453130181cc3075b1b9f906f2899b48daf9bf8266399a991922d78a1f09ba"
     }
   ]
 }

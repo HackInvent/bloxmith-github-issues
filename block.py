@@ -8,14 +8,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from html import escape
 from typing import Any
-from urllib import error as urlerror
 from urllib import parse as urlparse
-from urllib import request as urlrequest
 import json
 import os
 import time
+
+from . import transport
+from .transport import GitHubIssuesBlockError
 
 from bloxsmith_app.block_api import (
     APPLICATION_JSON,
@@ -77,14 +79,25 @@ STATE_REASON_VALUES = ("completed", "not_planned", "reopened")
 # FB6 - Run through the generic block runtime path used by both centralized and zeromq_active execution modes.
 # FB7 - Execute a standard multi-action payload from the actions input while keeping repo/token/runtime settings in config.
 # FB8 - Optionally enrich read issues with comment contents when include_comments is enabled.
-class GitHubIssuesBlockError(ValueError):
-    """Raised when the GitHub Issues block cannot complete an action."""
+# FB9 - Resolve wallet credentials, restrict actions and correlate recoverable outcomes without automatic retries.
+# FB10 - Expose bounded pagination and reject stale issue snapshots before guarded writes.
 
 
 class GitHubIssuesBlock(BlockDefinition):
     """Autonomous block implementation for GitHub Issues maintainer actions."""
 
     kind = "github_issues"
+
+    def handle_ui_action(self, *, node, action, values, payload=None):
+        if action in {"modal_update_fields", "inspector_update_fields"}:
+            patch = (values or {}).get("node_patch") or {}
+            if "config" in patch:
+                try:
+                    config = self.normalize_config({**self.default_config(), **(node.get("config") or {}), **patch["config"]})
+                    transport.validate_url(config["api_base_url"])
+                except (ValueError, TypeError):
+                    return {"error": "Check the GitHub scope, error mode, wallet reference and API URL; settings were not saved."}
+        return super().handle_ui_action(node=node, action=action, values=values, payload=payload)
 
     def render_node_card(self, *, node: dict[str, Any], payload: dict[str, Any] | None = None) -> dict[str, Any]:
         """Render the GitHub Issues canvas card from the block-owned template."""
@@ -194,11 +207,12 @@ class GitHubIssuesBlock(BlockDefinition):
             f'<input data-block-config-field="api_base_url" type="text" autocomplete="off" spellcheck="false" value="{escape(config["api_base_url"], quote=True)}" />'
             '</div>'
             '<div class="field-group github-issues-span-2">'
-            '<label>Token GitHub</label>'
+            '<label>Legacy GitHub token (optional)</label>'
             f'<input data-block-config-field="token" data-block-skip-empty="true" type="password" autocomplete="off" spellcheck="false" placeholder="{escape("Token configured" if config["token"] else "github_pat_...", quote=True)}" />'
             '</div>'
             '</div>'
-            '<p class="github-issues-modal-help">The token can stay empty when <code>GITHUB_TOKEN</code> is defined on the server. Repo, token, dry-run, API base URL and timeout stay in the block configuration.</p>'
+            '<p class="github-issues-modal-help">Prefer a wallet reference below. Without one, the legacy token or server <code>GITHUB_TOKEN</code> is used. Inputs cannot change these connection settings.</p>'
+            f'{self._render_safety_fields(config)}'
             '</section>'
             '</div>'
             '<aside class="github-issues-modal-section">'
@@ -327,6 +341,34 @@ class GitHubIssuesBlock(BlockDefinition):
             '</div>'
         )
 
+    def _render_safety_fields(self, config):
+        """Shared modal/inspector settings, keeping advanced controls grouped."""
+        checked = "checked" if config["require_revision"] else ""
+        return (
+            '<div class="field-group"><label>Wallet secret reference</label>'
+            f'<input data-block-config-field="token_ref" type="text" autocomplete="off" spellcheck="false" placeholder="secret://workspace/github_token" value="{escape(config["token_ref"], quote=True)}" />'
+            '<small class="field-hint">The token stays in the wallet. A configured reference never falls back to another credential.</small></div>'
+            '<details class="github-issues-safety"><summary>Scope, outcomes and pagination</summary>'
+            '<div class="field-group"><label>Allowed actions</label>'
+            f'<input data-block-config-field="allowed_actions" type="text" placeholder="list_issues,view_issue" value="{escape(config["allowed_actions"], quote=True)}" />'
+            '<small class="field-hint">Comma-separated action names. Empty permits all existing actions; this is not an approval mechanism.</small></div>'
+            '<div class="field-group"><label>On request failure</label>'
+            f'<select data-block-config-field="error_mode">{self._select_options(("fail", "result"), config["error_mode"])}</select>'
+            '<small class="field-hint">fail stops execution; result emits an error receipt so the workflow can handle it. Neither retries a write.</small></div>'
+            '<label class="checkbox-line">'
+            f'<input data-block-config-field="require_revision" data-block-value-type="boolean" type="checkbox" {checked} />'
+            '<span>Require a reviewed issue revision before writing</span></label>'
+            '<p class="field-hint">The actions input must include expected_revision from view_issue. A preflight reread detects changes; it is not an atomic server-side lock. Issue creation and multi-actions are disabled in this mode.</p>'
+            '<div class="field-group"><label>Issue list page</label>'
+            f'<input data-block-config-field="page" data-block-value-type="integer" type="number" min="1" max="10000" value="{config["page"]}" /></div>'
+            '<div class="field-group"><label>Filter by assignee</label>'
+            f'<input data-block-config-field="assignee" type="text" placeholder="login, * or none" value="{escape(config["assignee"], quote=True)}" /></div>'
+            '<div class="field-group"><label>Updated since (UTC)</label>'
+            f'<input data-block-config-field="since" type="text" placeholder="YYYY-MM-DDTHH:MM:SSZ" value="{escape(config["since"], quote=True)}" /></div>'
+            '<p class="field-hint">Lists also use the Labels field. One page is fetched per request; has_next_page signals more results. Comment enrichment still reads its first page only.</p>'
+            '</details>'
+        )
+
     def _modal_dom_id(self, node: dict[str, Any]) -> str:
         """Return a stable DOM-safe id fragment for the GitHub Issues modal."""
 
@@ -342,6 +384,7 @@ class GitHubIssuesBlock(BlockDefinition):
             template=(
                 template
                 .replace("{{ repo }}", escape(config["repo"], quote=True))
+                .replace("{{ safety_fields }}", self._render_safety_fields(config))
                 .replace("{{ api_base_url }}", escape(config["api_base_url"], quote=True))
                 .replace("{{ token_placeholder }}", "Token configured" if config["token"] else "github_pat_...")
                 .replace("{{ action_options }}", self._select_options(SUPPORTED_ACTIONS, config["action"]))
@@ -379,12 +422,25 @@ class GitHubIssuesBlock(BlockDefinition):
 
         logs: list[str] = []
         started = time.perf_counter()
-        config = self.normalize_config(context.config)
-        payload = self._input_payload(context)
+        config = {}
+        payload = {}
+        request_id = ""
         try:
+            config = self.normalize_config(context.config)
+            payload = self._input_payload(context)
+            if "request_id" in payload:
+                request_id = transport.identifier(payload["request_id"])
+            if "expected_target" in payload and payload["expected_target"] != {
+                    "repo": config["repo"], "api_base_url": config["api_base_url"]}:
+                raise GitHubIssuesBlockError("The configured connection differs from the reviewed target.", code="scope")
+            config = transport.resolve_token(context, config)
             self._validate_base_config(config)
             if self._is_multi_actions_payload(payload):
+                if config["require_revision"] or payload.get("expected_revision"):
+                    raise GitHubIssuesBlockError("Guarded writes require one action per approved request.")
                 result = self._dispatch_multi_actions(config, payload)
+                if request_id:
+                    result["request_id"] = request_id
                 result["duration_sec"] = round(time.perf_counter() - started, 3)
                 summary = self._summary(result)
                 result_json = json.dumps(result, ensure_ascii=False, indent=2)
@@ -395,11 +451,11 @@ class GitHubIssuesBlock(BlockDefinition):
                 )
                 logs.append(f"[done] GitHub Issues {context.node_id}: {summary}")
                 return BlockRuntimeResult(
-                    status="success" if result.get("ok") else "failed",
+                    status="success" if result.get("ok") or config["error_mode"] == "result" else "failed",
                     outputs=outputs,
                     logs=logs,
-                    error="" if result.get("ok") else str(result.get("error") or summary),
-                    exit_code=0 if result.get("ok") else 1,
+                    error="" if result.get("ok") or config["error_mode"] == "result" else str(result.get("error") or summary),
+                    exit_code=0 if result.get("ok") or config["error_mode"] == "result" else 1,
                     last_message=summary,
                     content_type=APPLICATION_JSON,
                     worker_received=summary,
@@ -414,6 +470,8 @@ class GitHubIssuesBlock(BlockDefinition):
                 f"dry_run={str(single_config['dry_run']).lower()}."
             )
             result = self._dispatch_action(single_config)
+            if request_id:
+                result["request_id"] = request_id
             result["duration_sec"] = round(time.perf_counter() - started, 3)
             summary = self._summary(result)
             result_json = json.dumps(result, ensure_ascii=False, indent=2)
@@ -432,6 +490,15 @@ class GitHubIssuesBlock(BlockDefinition):
             token = config.get("token", "")
             message = self._mask_secret(str(exc), token)
             logs.append(f"[github-issues-error] {context.node_id}: {message}")
+            if config.get("error_mode") == "result":
+                result = {"ok": False, "request_id": request_id, "repo": config.get("repo", ""),
+                          "code": exc.code, "error": message, "uncertain": exc.uncertain,
+                          "http": {"status": exc.status}}
+                if exc.current is not None:
+                    result["current"] = exc.current
+                return BlockRuntimeResult(status="success", outputs=self._runtime_outputs(context,
+                    result_json=json.dumps(result, ensure_ascii=True), summary=message), logs=logs,
+                    last_message=message, content_type=APPLICATION_JSON, metadata={"github_issues": {"ok": False, "code": exc.code}})
             return BlockRuntimeResult(
                 status="failed",
                 outputs=[],
@@ -446,8 +513,9 @@ class GitHubIssuesBlock(BlockDefinition):
     def normalize_config(self, config: dict[str, Any] | None) -> dict[str, Any]:
         """Return safe runtime configuration from raw node config."""
 
-        raw = config if isinstance(config, dict) else {}
+        raw = config if isinstance(config, Mapping) else {}
         return {
+            **transport.controls(raw, SUPPORTED_ACTIONS),
             "api_base_url": self._normalize_base_url(raw.get("api_base_url")),
             "token": str(raw.get("token") or os.getenv("GITHUB_TOKEN") or "").strip(),
             "repo": self._normalize_repo(raw.get("repo")),
@@ -463,6 +531,9 @@ class GitHubIssuesBlock(BlockDefinition):
             "include_comments": self._bool(raw.get("include_comments", False)),
             "dry_run": self._bool(raw.get("dry_run", True)),
             "per_page": self._normalize_int(raw.get("per_page"), default=DEFAULT_PER_PAGE, minimum=1, maximum=MAX_PER_PAGE),
+            "page": self._normalize_int(raw.get("page"), default=1, minimum=1, maximum=10000),
+            "assignee": str(raw.get("assignee") or "").strip()[:128],
+            "since": str(raw.get("since") or "").strip()[:32],
             "timeout_sec": self._normalize_int(raw.get("timeout_sec"), default=DEFAULT_TIMEOUT_SEC, minimum=1, maximum=MAX_TIMEOUT_SEC),
         }
 
@@ -487,12 +558,17 @@ class GitHubIssuesBlock(BlockDefinition):
             "state_reason",
             "include_pull_requests",
             "per_page",
+            "page", "assignee", "since", "include_comments",
         }
+        if "action" in payload and (not isinstance(payload["action"], str) or payload["action"] not in SUPPORTED_ACTIONS):
+            raise GitHubIssuesBlockError("Unsupported GitHub Issues action.")
         action_payload = {key: value for key, value in payload.items() if key in allowed_payload_keys}
         merged = {**config, **action_payload}
         if "body" not in action_payload and payload.get("_plain_text"):
             merged["body"] = str(payload["_plain_text"])
         normalized = self.normalize_config(merged)
+        if "expected_revision" in payload:
+            normalized["expected_revision"] = transport.identifier(payload["expected_revision"], "expected_revision", digest=True)
         if "_plain_text" in payload and not normalized["body"]:
             normalized["body"] = str(payload["_plain_text"])
         return normalized
@@ -508,17 +584,21 @@ class GitHubIssuesBlock(BlockDefinition):
         for key in ("actions", "1"):
             value = context.input_value(key)
             if value:
-                text = str(value)
+                text = json.dumps(dict(value), ensure_ascii=True) if isinstance(value, Mapping) else str(value)
                 break
         if not text:
             text = str(context.input_message or "")
         text = text.strip()
+        if len(text.encode("utf-8", errors="replace")) > 262144:
+            raise GitHubIssuesBlockError("Actions input exceeds 256 KiB.")
         if not text:
             return {}
         try:
             parsed = json.loads(text)
         except json.JSONDecodeError:
             return {"_plain_text": text}
+        except RecursionError:
+            raise GitHubIssuesBlockError("Actions input is nested too deeply.") from None
         return parsed if isinstance(parsed, dict) else {"_plain_text": text}
 
     def _validate_base_config(self, config: dict[str, Any]) -> None:
@@ -528,12 +608,16 @@ class GitHubIssuesBlock(BlockDefinition):
             raise GitHubIssuesBlockError("repo GitHub manquant. Format attendu: owner/repo.")
         if not self._is_valid_repo(config["repo"]):
             raise GitHubIssuesBlockError(f"Invalid GitHub repo: {config['repo']}. Expected format: owner/repo.")
+        transport.validate_url(config["api_base_url"])
 
     def _validate_action_config(self, config: dict[str, Any], action: str) -> None:
         """Validate one action and its token requirements before dispatch."""
 
         if action not in SUPPORTED_ACTIONS:
             raise GitHubIssuesBlockError(f"Action GitHub Issues non supportee: {action}.")
+        allowed = {part for part in config.get("allowed_actions", "").split(",") if part}
+        if allowed and action not in allowed:
+            raise GitHubIssuesBlockError("This action is outside the configured scope.", code="scope")
         if action in WRITE_ACTIONS and not config["dry_run"] and not config["token"]:
             raise GitHubIssuesBlockError("A GitHub token is required for a write action.")
 
@@ -587,6 +671,9 @@ class GitHubIssuesBlock(BlockDefinition):
                         "action": self._raw_action_name(action_payload),
                         "status": "failed",
                         "error": error_message,
+                        "code": exc.code,
+                        "uncertain": exc.uncertain,
+                        "http": {"status": exc.status},
                     }
                 )
 
@@ -595,6 +682,7 @@ class GitHubIssuesBlock(BlockDefinition):
         skipped_count = sum(1 for item in action_results if item.get("status") == "skipped")
         return {
             "ok": not failed,
+            "uncertain": any(item.get("uncertain", False) for item in action_results),
             "action": "multi_actions",
             "repo": config["repo"],
             "issue_number": issue_number,
@@ -681,7 +769,8 @@ class GitHubIssuesBlock(BlockDefinition):
             config,
             method="GET",
             path=f"/repos/{self._repo_path(config['repo'])}/issues",
-            query={"state": config["state"], "per_page": str(config["per_page"])},
+            query={"state": config["state"], "per_page": str(config["per_page"]), "page": str(config["page"]),
+                   **{key: config[key] for key in ("labels", "assignee", "since") if config[key]}},
         )
         items = response["data"] if isinstance(response["data"], list) else []
         if not config["include_pull_requests"]:
@@ -695,6 +784,9 @@ class GitHubIssuesBlock(BlockDefinition):
             "repo": config["repo"],
             "dry_run": False,
             "count": len(items),
+            "page": config["page"],
+            "per_page": config["per_page"],
+            "has_next_page": response["http"]["has_next_page"],
             "comments_included": bool(config["include_comments"]),
             "comments_count": comments_count,
             "data": items,
@@ -711,12 +803,14 @@ class GitHubIssuesBlock(BlockDefinition):
             path=f"/repos/{self._repo_path(config['repo'])}/issues/{issue_number}",
         )
         issue = response["data"]
+        snapshot_revision = transport.revision(issue)
         comments_count = 0
         if config["include_comments"] and isinstance(issue, dict):
             issue, comments_count = self._attach_comments_to_issue(config, issue)
         return {
             "ok": True,
             "action": "view_issue",
+            "revision": snapshot_revision,
             "repo": config["repo"],
             "issue_number": issue_number,
             "dry_run": False,
@@ -915,6 +1009,17 @@ class GitHubIssuesBlock(BlockDefinition):
                 payload=payload,
                 issue_number=issue_number,
             )
+        expected = config.get("expected_revision")
+        if config.get("require_revision") and (not expected or not issue_number):
+            raise GitHubIssuesBlockError("A guarded write requires an existing issue and expected_revision.")
+        if expected:
+            if not issue_number:
+                raise GitHubIssuesBlockError("A revision guard requires an existing issue.")
+            snapshot = self._api_request(config, method="GET", path=f"/repos/{self._repo_path(config['repo'])}/issues/{issue_number}")
+            actual = transport.revision(snapshot["data"])
+            if actual != expected:
+                raise GitHubIssuesBlockError("The issue changed after preparation; review the current issue and prepare a new draft.",
+                    code="conflict", current={"revision": actual, "data": snapshot["data"]})
         response = self._api_request(config, method=method, path=path, payload=payload)
         return {
             "ok": True,
@@ -964,44 +1069,7 @@ class GitHubIssuesBlock(BlockDefinition):
         """Send one GitHub REST request and parse the JSON response."""
 
         url = self._api_url(config["api_base_url"], path, query=query)
-        body = None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8")
-        headers = {
-            "Accept": "application/vnd.github+json",
-            "Content-Type": "application/json",
-            "User-Agent": "bloxsmith-github-issues-block",
-            "X-GitHub-Api-Version": GITHUB_API_VERSION,
-        }
-        if config["token"]:
-            headers["Authorization"] = f"Bearer {config['token']}"
-        request = urlrequest.Request(url, data=body, method=method, headers=headers)
-        try:
-            with urlrequest.urlopen(request, timeout=int(config["timeout_sec"])) as response:
-                response_body = response.read().decode("utf-8", errors="replace")
-                status = int(response.status)
-                response_headers = dict(response.headers.items())
-        except urlerror.HTTPError as exc:
-            response_body = exc.read().decode("utf-8", errors="replace")
-            safe_body = self._mask_secret(response_body, config["token"])
-            raise GitHubIssuesBlockError(f"GitHub HTTP {exc.code}: {safe_body[:800]}") from exc
-        except urlerror.URLError as exc:
-            raise GitHubIssuesBlockError(f"GitHub API inaccessible: {exc.reason}") from exc
-        except TimeoutError as exc:
-            raise GitHubIssuesBlockError(f"Timeout GitHub apres {config['timeout_sec']}s.") from exc
-
-        data: Any = {}
-        if response_body.strip():
-            try:
-                data = json.loads(response_body)
-            except json.JSONDecodeError as exc:
-                raise GitHubIssuesBlockError(f"Reponse GitHub non JSON: {response_body[:600]}") from exc
-        return {
-            "data": data,
-            "http": {
-                "status": status,
-                "rate_limit_remaining": response_headers.get("X-RateLimit-Remaining", ""),
-                "rate_limit_reset": response_headers.get("X-RateLimit-Reset", ""),
-            },
-        }
+        return transport.send(config, url, method=method, payload=payload, api_version=GITHUB_API_VERSION)
 
     def _runtime_outputs(self, context: BlockRuntimeContext, *, result_json: str, summary: str) -> list[BlockRuntimeOutput]:
         """Map JSON and summary values to declared output ports."""

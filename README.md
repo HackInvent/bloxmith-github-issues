@@ -36,21 +36,41 @@ Verified BloxSmith versions: **1.0.9** (bundled-block tests; see [test evidence]
 ## Configuration
 
 - `api_base_url`: GitHub-compatible API root. Default: `https://api.github.com`.
-- `token`: GitHub token. If empty at runtime, `GITHUB_TOKEN` is used.
+- `token_ref`: preferred credential, e.g. `secret://workspace/github_token`. Resolved only at execution through the public wallet service. When configured, a missing/locked/invalid wallet fails without falling back to another credential.
+- `token`: legacy GitHub token. Without `token_ref`, an empty token uses `GITHUB_TOKEN`. Existing blueprints keep this behavior; prefer the wallet for new ones.
+- `allowed_actions`: optional comma-separated action allowlist. Empty retains the existing full action set. Inputs cannot override it.
+- `error_mode`: `fail` (existing behavior) or `result` (emit a recoverable `ok:false` JSON outcome).
+- `require_revision`: require an existing issue's reviewed `expected_revision` for live writes. Multi-actions are refused in this mode.
 - `repo`: repository in `owner/repo` format.
 - `action`: one of `list_issues`, `view_issue`, `create_issue`, `comment_issue`, `add_labels`, `remove_label`, `assign_issue`, `close_issue`, `reopen_issue`.
 - `issue_number`: issue number required by issue-scoped actions.
 - `state`: `open`, `closed`, or `all` for `list_issues`.
 - `title`: issue title for `create_issue`.
 - `body`: issue body or comment body.
-- `labels`: comma-separated labels.
+- `labels`: comma-separated labels, also used as a list filter.
 - `assignees`: comma-separated GitHub logins.
 - `state_reason`: close reason for `close_issue`.
 - `include_pull_requests`: when false, `list_issues` removes GitHub PR objects returned by the Issues endpoint.
 - `include_comments`: when true, read actions enrich each issue JSON with `comments_data`, using `GET /issues/{issue_number}/comments`. It is disabled by default to avoid extra API calls.
 - `dry_run`: when true, write actions emit the planned request without calling GitHub.
 - `per_page`: result page size for `list_issues`, capped at 100.
-- `timeout_sec`: HTTP timeout.
+- `page`: issue list page, from 1 to 10000. Exactly one page is requested; `has_next_page` indicates more results without following a remote URL.
+- `assignee`, `since`: optional list filters (GitHub login / `*` / `none`, and UTC ISO timestamp).
+- `timeout_sec`: socket timeout per HTTP request, not a total workflow deadline. Responses are limited to 2 MiB and input/request payloads to 256 KiB.
+
+## Controlled support workflows
+
+An input `request_id` (ASCII letters/digits plus `._:-`, at most 128 characters) is copied to success and recoverable failure results. It is correlation, **not connector-level deduplication**. Re-executing a successful write can perform it again: an approval coordinator must own a durable journal and decide whether it may dispatch.
+
+An optional `expected_target` object must exactly match the configured `repo` and `api_base_url`; otherwise no request or credential resolution occurs. An approval workflow should bind these values as well as the action payload and issue revision into its reviewed draft. This assertion cannot change the connection.
+
+`view_issue` adds `revision`, a SHA-256 of the complete issue snapshot before optional comment enrichment. A single write can include `expected_revision`. Immediately before writing, the connector rereads the issue; a mismatch emits a `conflict` with the current snapshot in `result` mode and sends no mutation. This is a preflight check, **not an atomic compare-and-set or server-side lock**: another actor can change the issue between the read and write. Do not use it as an exactly-once guarantee. With `require_revision`, issue creation cannot execute because it has no existing snapshot; prepare and approve individual actions instead of a multi-action batch.
+
+In `error_mode: result`, failures include `code`, `error`, `http.status`, and `uncertain`. A write followed by a network failure, invalid/oversized response, HTTP 408 or HTTP 5xx is conservatively uncertain; it may have been applied. The block never automatically retries. Verify remote state before deciding what to do next. Locked wallets, scope refusal and revision conflicts are not uncertain. Multi-actions still report partial success, failed and skipped entries, including uncertainty on a failed entry.
+
+The connector does not authenticate an approver or persist draft decisions. Connect its read and write operations to an explicit approval/journal workflow; dry-run and action scoping alone are not approval. Restrict the wallet token to the permitted repository and GitHub Issues permissions as well as configuring the block scope.
+
+API roots must use HTTPS, except HTTP loopback endpoints for local integration tests. Redirects are refused to avoid forwarding credentials or replaying mutations; update a moved repository/API root explicitly. Environment proxies are not inherited. Existing API version `2022-11-28` is retained. Comment enrichment reads only its first page, even when the issue list uses a later page. References: [GitHub Issues API](https://docs.github.com/en/rest/issues/issues), [pagination](https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api), [API best practices](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api).
 
 ## Runtime Behavior
 
